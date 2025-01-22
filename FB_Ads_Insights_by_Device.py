@@ -43,7 +43,7 @@ conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database
 cursor = conn.cursor()
 
 # Truncate the table
-# cursor.execute(f'TRUNCATE TABLE {db_table}')
+cursor.execute(f'TRUNCATE TABLE {db_table}')
 
 for insight in insights:
     account_id = insight['account_id']
