@@ -6,14 +6,15 @@ from datetime import datetime, timedelta
 # Facebook API endpoint
 GRAPH_API_VERSION = 'v20.0'  # Specify the desired Graph API version
 PAGE_ID = '109818058023623'
-ACCESS_TOKEN = 'EAAFe1V0tVGYBO3VsQsg7BZBlljEmJbRDfZA5cCmmOHLxQZAJr6wsEzP73FZB3tayY1xiTbiDcIRp87ClJfy2f8ZArwlITxVbvXln4SDbJcikZBGeVRLhZC6XjRZCcQNLSD86xTI6CoADpGf29W8hcp9vZCKULHherqkNFrdfLO8liTcMaLubYrKBuH1MxwvvuqfQrrk8wKZCBM1TQJUSTj0Le91IUXT3oKG9B8UZCiDLQ8ZD'
+ACCESS_TOKEN = 'EAAFe1V0tVGYBOwdFsduM7xWqv6AHYkkG0efZBrsB4jg9OgjTZAe6euHLDpCi5oUmMeNL6b9XSfP3EcoZCnPR1qDUgrLadZCRrCUf2DPns8lBk2FVfHbh6e8a7zXkxgx0nTyQu03lqnVdAckouBBNrxZB0sFY4LbVVbIvXkHTrqtjsX6zQCwgpaf2X9v6UjV2434ZArba3plEMXGC1HPuzKR8iieTt73PaVbDxmFUAZD'
 all_data = []
 # until_date = datetime.now().date()
 # since_date = until_date - timedelta(days=4)
-since_date = '2024-04-06'
-until_date = '2024-05-28'
+#Limit is 93 days
+since_date = '2024-01-22'
+until_date = '2025-06-22'
 # (datetime.now().date())
-endpoint = f"https://graph.facebook.com/v19.0/109818058023623/insights"
+endpoint = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{PAGE_ID}/insights"
 
 # Define the parameters for the request
 params = {
@@ -22,7 +23,7 @@ params = {
               'page_video_views_paid,page_video_views_organic,page_video_views_click_to_play,'
               'page_posts_impressions,page_posts_impressions_paid,page_posts_impressions_organic,page_posts_impressions_viral,'
               'page_posts_impressions_nonviral,page_impressions,page_impressions_unique,page_impressions_paid,'
-              'page_impressions_viral,page_impressions_nonviral,page_impressions_organic_v2,'
+              'page_impressions_viral,page_impressions_nonviral,'
               'page_post_engagements,page_actions_post_reactions_like_total,page_actions_post_reactions_anger_total,'
               'page_actions_post_reactions_wow_total,page_actions_post_reactions_haha_total, page_actions_post_reactions_love_total,'
               'page_actions_post_reactions_sorry_total',
@@ -33,6 +34,7 @@ params = {
 response = requests.get(endpoint, params=params)
 
 analytics_data = response.json()
+# print (analytics_data)
 list_type_data = analytics_data.get('data')
 # print(list_type_data)
 #----------------------------------------------------------------------------------------------
@@ -46,6 +48,7 @@ conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database
 cursor = conn.cursor()
 
 result_data = {}
+
 for item in list_type_data:
     metric_name = item.get("name")
     for value in item.get("values"):
@@ -64,11 +67,11 @@ for end_time, metrics in result_data.items():
                                      page_posts_impressions,page_posts_impressions_paid,page_posts_impressions_organic,
                                      page_posts_impressions_viral,page_posts_impressions_nonviral,
                                      page_impressions, page_impressions_unique,page_impressions_paid, page_impressions_viral,
-                                     page_impressions_nonviral,page_impressions_organic_v2, page_post_engagements,
+                                     page_impressions_nonviral, page_post_engagements,
                                      page_actions_post_reactions_like_total, page_actions_post_reactions_anger_total,
                                      page_actions_post_reactions_wow_total, page_actions_post_reactions_haha_total,
                                      page_actions_post_reactions_love_total, page_actions_post_reactions_sorry_total)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     '''
     # Executing the INSERT query
     cursor.execute(query, (end_time,metrics['page_fans'], metrics['page_fan_adds'],
@@ -78,8 +81,7 @@ for end_time, metrics in result_data.items():
                            metrics['page_posts_impressions_paid'],metrics['page_posts_impressions_organic'],metrics['page_posts_impressions_viral'],
                            metrics['page_posts_impressions_nonviral'],metrics['page_impressions'],
                            metrics['page_impressions_unique'],metrics['page_impressions_paid'], metrics['page_impressions_viral'],
-                           metrics['page_impressions_nonviral'],metrics['page_impressions_organic_v2'],
-                           metrics['page_post_engagements'], metrics['page_actions_post_reactions_like_total'],
+                           metrics['page_impressions_nonviral'],metrics['page_post_engagements'], metrics['page_actions_post_reactions_like_total'],
                            metrics['page_actions_post_reactions_anger_total'], metrics['page_actions_post_reactions_wow_total'],
                            metrics['page_actions_post_reactions_haha_total'], metrics['page_actions_post_reactions_love_total'],
                            metrics['page_actions_post_reactions_sorry_total']))
