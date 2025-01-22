@@ -5,7 +5,8 @@ import pyodbc
 # Set up your app credentials
 app_id = '385745461007462'
 app_secret = '39838a1fd0b95af866f368acc81f77b0'
-access_token = 'EAAFe1V0tVGYBO3VsQsg7BZBlljEmJbRDfZA5cCmmOHLxQZAJr6wsEzP73FZB3tayY1xiTbiDcIRp87ClJfy2f8ZArwlITxVbvXln4SDbJcikZBGeVRLhZC6XjRZCcQNLSD86xTI6CoADpGf29W8hcp9vZCKULHherqkNFrdfLO8liTcMaLubYrKBuH1MxwvvuqfQrrk8wKZCBM1TQJUSTj0Le91IUXT3oKG9B8UZCiDLQ8ZD'
+api_version='v20.0'
+access_token = 'EAAFe1V0tVGYBOx1L62SL3JMTOoh29n4XbKh9Ac98vJmjV9eTW7ZAAzlcIuBZAnwidsbuhTZCFvgBH454NEF8HQK2GujrNzEb1xSJcnguHQPJ6ITodY2nuk8o76n2DNJI1Mfm5CjzS8DeCunOZA9zWiZAcUZB12BtQY05XqSrsBavnRambikqPGw2B5cakxVvWqh6Vl7hDD'
 today = datetime.datetime.today().strftime('%Y-%m-%d')
 ad_account_id = 'act_145093901032221'
 
@@ -20,26 +21,29 @@ fields = ['ad_id','ad_name','adset_id','adset_name','campaign_id','campaign_name
     'reach','impressions','clicks','spend','frequency','account_currency','buying_type','unique_ctr','ctr','cpc',
     'cpm','cpp','objective','created_time','updated_time' ]
 params = {
-    'time_range': {'since': '2021-01-01', 'until': today},
+    'time_range': {'since': '2022-01-01', 'until': today},
+    #limit is 37 months
     'level': 'ad',
-    'breakdowns': ['country','region']
+    'breakdowns': ['impression_device','device_platform'],
+    'time_increment': 1
 }
 
 # Retrieve ad insights
 insights = ad_account.get_insights(fields=fields, params=params)
-print(insights)
+# print(insights)
 #-----------------------------------------------------------------------------------------------------
 # Establish a connection to your SQL Server database
 server = 'Predicta.Database.Windows.Net'
 database = 'Predicta'
 username = 'PredictaAdmin'
 password = 'Yhf^43*&^FHHytf'
+db_table = 'dbo.FB_Ads_Insights_by_Device_KS'
 
 conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}')
 cursor = conn.cursor()
 
 # Truncate the table
-cursor.execute('TRUNCATE TABLE dbo.Facebook_Ads_Insights_by_Location_KS')
+# cursor.execute(f'TRUNCATE TABLE {db_table}')
 
 for insight in insights:
     account_id = insight['account_id']
@@ -76,18 +80,18 @@ for insight in insights:
     except KeyError:frequency = 0
     try: unique_ctr = insight['unique_ctr']
     except KeyError:unique_ctr = 0
-    try: country = insight['country']
-    except KeyError:country = 0
-    try: region = insight['region']
-    except KeyError:region = 0
+    try: impression_device = insight['impression_device']
+    except KeyError:impression_device = 0
+    try: device_platform = insight['device_platform']
+    except KeyError:device_platform = 0
     query = f'''
-        INSERT INTO dbo.Facebook_Ads_Insights_by_Location_KS (account_id,account_name,ad_id,ad_name,adset_id,adset_name,campaign_id
-      ,campaign_name,country,region,buying_type,created_time,updated_time,objective,account_currency,clicks,cpc,cpm,cpp,ctr,impressions
-      ,reach,spend,frequency,unique_ctr)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+        INSERT INTO {db_table} (account_id,account_name,ad_id,ad_name,adset_id,adset_name,campaign_id
+      ,campaign_name,impression_device,device_platform,buying_type,created_time,updated_time,objective,account_currency,clicks,cpc,cpm,cpp,ctr,impressions
+      ,reach,spend,frequency,unique_ctr, date_start, date_stop)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)'''
     cursor.execute(query,account_id,account_name,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,
-                   country,region,buying_type,created_time,updated_time,objective,account_currency,clicks,cpc,cpm,cpp,ctr,
-                   impressions,reach,spend,frequency,unique_ctr)
+                   impression_device,device_platform,buying_type,created_time,updated_time,objective,account_currency,clicks,cpc,cpm,cpp,ctr,
+                   impressions,reach,spend,frequency,unique_ctr,insight['date_start'], insight['date_stop'])
 conn.commit()
 cursor.close()
 conn.close()
